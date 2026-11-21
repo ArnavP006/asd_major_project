@@ -30,8 +30,7 @@ const fileEnv = {
 // Prioritize .env file, or clean environment variable (ignoring stale local 'museumx' exports)
 const connectionString =
   fileEnv.DATABASE_URL ||
-  (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('/museumx') ? process.env.DATABASE_URL : null) ||
-  'postgresql://neondb_owner:npg_cM9VUDlNZt5F@ep-hidden-silence-azhxsrpv-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+  (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('/museumx') ? process.env.DATABASE_URL : null);
 
 const pool = new Pool({
   connectionString,
