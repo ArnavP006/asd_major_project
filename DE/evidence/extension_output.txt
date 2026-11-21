@@ -1,0 +1,19 @@
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+INSERT 0 8
+=== Ext-Q: visitors per exhibition/show using real foreign keys (no string matching) ===
+    attraction    |    kind    | visitors 
+------------------+------------+----------
+ Dinosaur Gallery | exhibition |        8
+ 3D Science Show  | show       |        2
+ Human Body       | exhibition |        2
+ Planetarium Show | show       |        2
+ Robotics Live    | show       |        1
+ Space Odyssey    | exhibition |        1
+(6 rows)
+
+=== Ext-test: an item pointing to BOTH an exhibition and a show must fail ===
+psql:sql/extension_booking_item.sql:29: ERROR:  new row for relation "BookingItem" violates check constraint "chk_item_one_target"
+DETAIL:  Failing row contains (9, 1, 1, 1, 1).

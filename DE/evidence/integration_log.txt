@@ -1,0 +1,265 @@
+(node:42296) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+>>> READ: availability from 2026-11-22
+[
+  {
+    "date": "2026-11-22",
+    "capacity": 500,
+    "bookedCount": 16,
+    "remaining": 484
+  },
+  {
+    "date": "2026-12-01",
+    "capacity": 500,
+    "bookedCount": 2,
+    "remaining": 498
+  },
+  {
+    "date": "2026-12-11",
+    "capacity": 100,
+    "bookedCount": 4,
+    "remaining": 96
+  },
+  {
+    "date": "2026-12-25",
+    "capacity": 1,
+    "bookedCount": 1,
+    "remaining": 0
+  },
+  {
+    "date": "2027-02-09",
+    "capacity": 3,
+    "bookedCount": 3,
+    "remaining": 0
+  },
+  {
+    "date": "2027-03-11",
+    "capacity": 5,
+    "bookedCount": 2,
+    "remaining": 3
+  },
+  {
+    "date": "2027-05-10",
+    "capacity": 1000,
+    "bookedCount": 0,
+    "remaining": 1000
+  },
+  {
+    "date": "2027-05-30",
+    "capacity": 100,
+    "bookedCount": 0,
+    "remaining": 100
+  }
+]
+
+>>> CREATE: Neha (user 8) books 4 Student tickets for Robotics Live
+{
+  "id": 26,
+  "bookingCode": "BK-7ABC8A3A",
+  "userId": 8,
+  "ticketTypeId": 3,
+  "dailyCapacityId": 12,
+  "quantity": 4,
+  "unitPrice": 4000,
+  "totalAmount": 16000,
+  "status": "PENDING_PAYMENT",
+  "createdAt": "2026-11-21T09:20:00.955Z",
+  "updatedAt": "2026-11-21T09:20:00.955Z",
+  "date": "2026-11-22",
+  "itemsJson": null,
+  "refId": 3,
+  "refName": "Robotics Live",
+  "refNameHi": null,
+  "slotId": "show-3",
+  "slotLabel": "17:00-18:00",
+  "target": "show"
+}
+   [DB check] SELECT "bookingCode", status, quantity, "totalAmount" FROM "Booking" WHERE "bookingCode" = $1  params=["BK-7ABC8A3A"]
+   [{"bookingCode":"BK-7ABC8A3A","status":"PENDING_PAYMENT","quantity":4,"totalAmount":16000}]
+   [DB check] SELECT "bookedCount" FROM "DailyCapacity" WHERE "visitDate" = '2026-11-22'  params=[]
+   [{"bookedCount":20}]
+
+>>> VALIDATION: quantity 0
+REJECTED [INVALID_QUANTITY]: quantity must be an integer between 1 and 20
+
+>>> VALIDATION: 5000 tickets exceeds the per-booking limit
+REJECTED [INVALID_QUANTITY]: quantity must be an integer between 1 and 20
+
+>>> FK: user 999 does not exist
+REJECTED [23503]: insert or update on table "Booking" violates foreign key constraint "Booking_userId_fkey"
+   [DB check] SELECT COUNT(*)::int AS bookings_for_user_8 FROM "Booking" WHERE "userId" = 8  params=[]
+   [{"bookings_for_user_8":13}]
+
+>>> UPDATE: payment verified -> booking confirmed, QR tickets issued
+[
+  {
+    "qrToken": "QR-BK-7ABC8A3A-1",
+    "status": "VALID"
+  },
+  {
+    "qrToken": "QR-BK-7ABC8A3A-2",
+    "status": "VALID"
+  },
+  {
+    "qrToken": "QR-BK-7ABC8A3A-3",
+    "status": "VALID"
+  },
+  {
+    "qrToken": "QR-BK-7ABC8A3A-4",
+    "status": "VALID"
+  }
+]
+   [DB check] SELECT status FROM "Booking" WHERE "bookingCode" = $1  params=["BK-7ABC8A3A"]
+   [{"status":"CONFIRMED"}]
+   [DB check] SELECT status, "providerReference" FROM "Payment" WHERE "bookingId" = $1  params=[26]
+   [{"status":"SUCCESS","providerReference":"pay_demo_001"}]
+
+>>> Confirm same booking twice
+REJECTED [NOT_PENDING]: booking not found or not awaiting payment
+
+>>> UPDATE: gate scan #1
+{
+  "qrToken": "QR-BK-7ABC8A3A-1",
+  "status": "USED"
+}
+
+>>> UPDATE: gate scan #2 (same QR)
+REJECTED [INVALID_OR_USED]: ticket not found or already used
+   [DB check] SELECT "qrToken", status, "scannedAt" IS NOT NULL AS scanned FROM "IssuedTicket" WHERE "bookingId" = $1 ORDER BY id  params=[26]
+   [{"qrToken":"QR-BK-7ABC8A3A-1","status":"USED","scanned":true},{"qrToken":"QR-BK-7ABC8A3A-2","status":"VALID","scanned":false},{"qrToken":"QR-BK-7ABC8A3A-3","status":"VALID","scanned":false},{"qrToken":"QR-BK-7ABC8A3A-4","status":"VALID","scanned":false}]
+
+>>> READ: akshat bookings
+[
+  {
+    "bookingCode": "BK-7ABC8A3A",
+    "ticket": "Child",
+    "quantity": 4,
+    "totalAmount": 16000,
+    "status": "CONFIRMED"
+  },
+  {
+    "bookingCode": "BK-82367F10",
+    "ticket": "General Entry",
+    "quantity": 1,
+    "totalAmount": 10000,
+    "status": "PENDING_PAYMENT"
+  },
+  {
+    "bookingCode": "BK-E41B95EC",
+    "ticket": "General Entry",
+    "quantity": 2,
+    "totalAmount": 20000,
+    "status": "CANCELLED"
+  },
+  {
+    "bookingCode": "BK-7BD20FDE",
+    "ticket": "Child",
+    "quantity": 4,
+    "totalAmount": 16000,
+    "status": "CONFIRMED"
+  },
+  {
+    "bookingCode": "BK-EDA5E917",
+    "ticket": "General Entry",
+    "quantity": 2,
+    "totalAmount": 20000,
+    "status": "CANCELLED"
+  },
+  {
+    "bookingCode": "BK-68B41150",
+    "ticket": "Child",
+    "quantity": 4,
+    "totalAmount": 16000,
+    "status": "CONFIRMED"
+  },
+  {
+    "bookingCode": "BK-65910ED9",
+    "ticket": "General Entry",
+    "quantity": 2,
+    "totalAmount": 20000,
+    "status": "CANCELLED"
+  },
+  {
+    "bookingCode": "BK-4C51020C",
+    "ticket": "Child",
+    "quantity": 4,
+    "totalAmount": 16000,
+    "status": "CONFIRMED"
+  },
+  {
+    "bookingCode": "BK-9913D1DC",
+    "ticket": "General Entry",
+    "quantity": 1,
+    "totalAmount": 10000,
+    "status": "PENDING_PAYMENT"
+  },
+  {
+    "bookingCode": "BK-2EA3C215",
+    "ticket": "General Entry",
+    "quantity": 1,
+    "totalAmount": 10000,
+    "status": "PENDING_PAYMENT"
+  },
+  {
+    "bookingCode": "BK-46E26384",
+    "ticket": "General Entry",
+    "quantity": 2,
+    "totalAmount": 20000,
+    "status": "CANCELLED"
+  },
+  {
+    "bookingCode": "BK-BBB7FFEE",
+    "ticket": "Child",
+    "quantity": 4,
+    "totalAmount": 16000,
+    "status": "CONFIRMED"
+  },
+  {
+    "bookingCode": "MX88C67E7B",
+    "ticket": "Student",
+    "quantity": 1,
+    "totalAmount": 5000,
+    "status": "CONFIRMED"
+  }
+]
+
+>>> DELETE/CANCEL: booking with a scanned ticket
+REJECTED [ALREADY_USED]: tickets already used; cannot cancel
+   [DB check] SELECT "bookedCount" FROM "DailyCapacity" WHERE "visitDate" = '2026-11-22'  params=[]
+   [{"bookedCount":26}]
+
+>>> CANCEL: second booking (refund + release seats)
+{
+  "bookingCode": "BK-5EA5F474",
+  "status": "CANCELLED"
+}
+   [DB check] SELECT "bookedCount" FROM "DailyCapacity" WHERE "visitDate" = '2026-11-22'  params=[]
+   [{"bookedCount":24}]
+   [DB check] SELECT status FROM "Payment" WHERE "bookingId" = $1  params=[28]
+   [{"status":"REFUNDED"}]
+
+>>> CONCURRENCY: two simultaneous buyers, 1 seat left
+   buyer 1: GOT THE SEAT (BK-8FFACD73)
+   buyer 2: REJECTED [SOLD_OUT] only 0 seats left on 2026-12-25
+   [DB check] SELECT capacity, "bookedCount" FROM "DailyCapacity" WHERE "visitDate" = '2026-12-25'  params=[]
+   [{"capacity":1,"bookedCount":1}]
+
+>>> REPORT: revenue by ticket type
+[
+  {
+    "ticket_type": "Child",
+    "revenue": 96000
+  },
+  {
+    "ticket_type": "General Entry",
+    "revenue": 60000
+  }
+]

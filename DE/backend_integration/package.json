@@ -1,0 +1,8 @@
+{
+  "name": "museumx-de-integration",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DE deliverable: database <-> backend integration demo for MuseumX",
+  "scripts": { "demo": "node demo.js" },
+  "dependencies": { "pg": "^8.11.0" }
+}

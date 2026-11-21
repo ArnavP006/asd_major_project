@@ -1,0 +1,124 @@
+=== Q1 INSERT (transaction): visitor books 3 Adult tickets for 2026-11-23, capacity is checked and locked ===
+BEGIN
+UPDATE 1
+COMMIT
+ bookingCode |     status      | quantity | totalAmount | payment_status | day_booked 
+-------------+-----------------+----------+-------------+----------------+------------
+ BK-015      | PENDING_PAYMENT |        3 |         300 | PENDING        |          9
+(1 row)
+
+=== Q2 UPDATE: payment succeeds -> booking CONFIRMED and QR tickets issued ===
+INSERT 0 3
+ bookingCode |  status   | tickets_issued 
+-------------+-----------+----------------
+ BK-015      | CONFIRMED |              3
+(1 row)
+
+=== Q3 UPDATE: gate scan - first scan accepted ===
+ qrToken  | status 
+----------+--------
+ QR-015-1 | USED
+(1 row)
+
+UPDATE 1
+=== Q3b same QR scanned again - rejected (0 rows) = duplicate entry prevented ===
+ qrToken | status 
+---------+--------
+(0 rows)
+
+UPDATE 0
+=== Q4 DELETE: purge abandoned unpaid bookings (no payment attempt, older than 2026-11-20) and release their seats ===
+ deleted_booking | visitDate  | new_booked_count 
+-----------------+------------+------------------
+ BK-012          | 2026-11-22 |                3
+(1 row)
+
+=== Q5 SELECT + filter + sort: booking history of Asha Patil, newest first ===
+ bookingCode | ticket | quantity | totalAmount |    date    |     status      
+-------------+--------+----------+-------------+------------+-----------------
+ BK-010      | Child  |        2 |         100 | 2026-11-21 | PENDING_PAYMENT
+ BK-004      | Adult  |        1 |         100 | 2026-11-15 | CONFIRMED
+ BK-001      | Adult  |        2 |         200 | 2026-11-14 | CONFIRMED
+(3 rows)
+
+=== Q6 Real-time availability: remaining seats from 2026-11-21 onwards ===
+ visitDate  | capacity | bookedCount | remaining | pct_full 
+------------+----------+-------------+-----------+----------
+ 2026-11-21 |      800 |           5 |       795 |      0.6
+ 2026-11-22 |      800 |           3 |       797 |      0.4
+ 2026-11-23 |      500 |           9 |       491 |      1.8
+(3 rows)
+
+=== Q7 Aggregates: overall dashboard numbers ===
+ confirmed_bookings | total_visitors | booked_value | avg_booking_value 
+--------------------+----------------+--------------+-------------------
+                 12 |             34 |         2980 |            248.33
+(1 row)
+
+=== Q8 GROUP BY + JOIN: realised revenue per ticket type (only SUCCESS payments) ===
+ ticket_type | bookings | tickets | revenue 
+-------------+----------+---------+---------
+ Adult       |        9 |      24 |    2400
+ Student     |        2 |       8 |     480
+ Child       |        1 |       2 |     100
+(3 rows)
+
+=== Q9 GROUP BY: most popular exhibitions and shows ===
+   target   |       name       | bookings | visitors 
+------------+------------------+----------+----------
+ exhibition | Dinosaur Gallery |        2 |        8
+ show       | 3D Science Show  |        1 |        2
+ exhibition | Human Body       |        1 |        2
+ show       | Planetarium Show |        1 |        2
+ show       | Robotics Live    |        1 |        1
+ exhibition | Space Odyssey    |        1 |        1
+(6 rows)
+
+=== Q10 HAVING: peak days - dates with 5 or more confirmed visitors ===
+ visitDate  | visitors | bookings 
+------------+----------+----------
+ 2026-11-23 |        9 |        2
+ 2026-11-14 |        5 |        2
+ 2026-11-20 |        5 |        1
+(3 rows)
+
+=== Q11 JOIN (4 tables): QR verification at the gate for token QR-005-2 ===
+ qrToken  | ticket_status | bookingCode |   visitor   | ticket_type |    date    |  slotLabel  
+----------+---------------+-------------+-------------+-------------+------------+-------------
+ QR-005-2 | USED          | BK-005      | Karan Singh | Adult       | 2026-11-16 | 12:00-14:00
+(1 row)
+
+=== Q12 LEFT JOIN: registered visitors who never booked (marketing list) ===
+ id |    name    |      email       
+----+------------+------------------
+  8 | Neha Desai | neha@example.com
+(1 row)
+
+=== Q13 Subquery: bookings worth more than the average booking ===
+ bookingCode | totalAmount |  status   
+-------------+-------------+-----------
+ BK-014      |         600 | CONFIRMED
+ BK-005      |         400 | CONFIRMED
+ BK-008      |         300 | CONFIRMED
+ BK-009      |         300 | CONFIRMED
+ BK-015      |         300 | CONFIRMED
+(5 rows)
+
+=== Q14 Advanced (CTE + window function): daily revenue with running total ===
+    day     | revenue | running_total 
+------------+---------+---------------
+ 2026-11-12 |     380 |           380
+ 2026-11-13 |     200 |           580
+ 2026-11-14 |     400 |           980
+ 2026-11-16 |     200 |          1180
+ 2026-11-18 |     300 |          1480
+ 2026-11-19 |     300 |          1780
+ 2026-11-20 |     900 |          2680
+ 2026-11-21 |     300 |          2980
+(8 rows)
+
+=== Q15 Data-quality check (NOT EXISTS): confirmed bookings without a successful payment - expected 0 rows ===
+ bookingCode | status 
+-------------+--------
+(0 rows)
+

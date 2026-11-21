@@ -1,0 +1,36 @@
+--- duplicate user email (UNIQUE) ---
+psql:sql/integrity_tests.sql:3: ERROR:  duplicate key value violates unique constraint "User_email_key"
+DETAIL:  Key (email)=(asha@example.com) already exists.
+--- booking for non-existent user (FOREIGN KEY) ---
+psql:sql/integrity_tests.sql:5: ERROR:  insert or update on table "Booking" violates foreign key constraint "Booking_userId_fkey"
+DETAIL:  Key (userId)=(999) is not present in table "User".
+--- quantity zero (CHECK) ---
+psql:sql/integrity_tests.sql:7: ERROR:  new row for relation "Booking" violates check constraint "chk_booking_qty"
+DETAIL:  Failing row contains (16, 75d53ac743ce4cf4662b9c63aea0a014, 1, 1, 1, 0, 100, 0, PENDING_PAYMENT, entry, null, null, null, null, null, null, null, 2026-11-21 13:43:06.402, 2026-11-21 13:43:06.402).
+--- total does not match quantity x unitPrice (CHECK) ---
+psql:sql/integrity_tests.sql:9: ERROR:  new row for relation "Booking" violates check constraint "chk_booking_total"
+DETAIL:  Failing row contains (17, 5a3cba1f2d964839901b4e9ce5bd32df, 1, 1, 1, 2, 100, 999, PENDING_PAYMENT, entry, null, null, null, null, null, null, null, 2026-11-21 13:43:06.402, 2026-11-21 13:43:06.402).
+--- overbooking: bookedCount above capacity (CHECK) ---
+psql:sql/integrity_tests.sql:11: ERROR:  new row for relation "DailyCapacity" violates check constraint "chk_capacity_range"
+DETAIL:  Failing row contains (1, 2026-11-14, 800, 801, 2026-11-21 13:43:06.355, 2026-11-21 13:43:06.355).
+--- invalid booking status (CHECK) ---
+psql:sql/integrity_tests.sql:13: ERROR:  new row for relation "Booking" violates check constraint "chk_booking_status"
+DETAIL:  Failing row contains (1, BK-001, 1, 1, 1, 2, 100, 200, MAYBE, entry, null, null, null, 2026-11-14, entry-1, 10:00-12:00, null, 2026-11-12 10:00:00, 2026-11-21 13:43:06.356).
+--- negative ticket price (CHECK) ---
+psql:sql/integrity_tests.sql:15: ERROR:  new row for relation "TicketType" violates check constraint "chk_ticket_price"
+DETAIL:  Failing row contains (1, Adult, वयस्क, -10, Standard entry for adults, null, t, 2026-11-21 13:43:06.352, 2026-11-21 13:43:06.352).
+--- duplicate QR token (UNIQUE) ---
+psql:sql/integrity_tests.sql:17: ERROR:  duplicate key value violates unique constraint "IssuedTicket_qrToken_key"
+DETAIL:  Key ("qrToken")=(QR-001-1) already exists.
+--- ticket marked USED without scan time (CHECK) ---
+psql:sql/integrity_tests.sql:19: ERROR:  new row for relation "IssuedTicket" violates check constraint "chk_ticket_scan"
+DETAIL:  Failing row contains (21, 9, QR-009-2, USED, 2026-11-19 09:04:00, null).
+--- two capacity rows for the same date (UNIQUE) ---
+psql:sql/integrity_tests.sql:21: ERROR:  duplicate key value violates unique constraint "DailyCapacity_visitDate_key"
+DETAIL:  Key ("visitDate")=(2026-11-14) already exists.
+--- deleting a booking that has payments (FK RESTRICT) ---
+psql:sql/integrity_tests.sql:23: ERROR:  update or delete on table "Booking" violates foreign key constraint "Payment_bookingId_fkey" on table "Payment"
+DETAIL:  Key (id)=(1) is still referenced from table "Payment".
+--- same gateway payment reference recorded twice (UNIQUE partial index) ---
+psql:sql/integrity_tests.sql:25: ERROR:  duplicate key value violates unique constraint "Payment_providerReference_key"
+DETAIL:  Key ("providerReference")=(pay_001) already exists.

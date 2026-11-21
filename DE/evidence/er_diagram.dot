@@ -1,0 +1,60 @@
+digraph MuseumX {
+  rankdir=LR; splines=true; nodesep=0.5; ranksep=1.1; fontname="Helvetica";
+  node [shape=plaintext, fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=9, arrowhead=crow, arrowtail=tee, dir=both, color="#334155"];
+
+  User [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#EFF6FF">
+    <TR><TD BGCOLOR="#1D4ED8"><FONT COLOR="white"><B>User</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">name</TD></TR>
+    <TR><TD ALIGN="LEFT">email (UQ)</TD></TR><TR><TD ALIGN="LEFT">phone</TD></TR><TR><TD ALIGN="LEFT">passwordHash</TD></TR></TABLE>>];
+  TicketType [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#EFF6FF">
+    <TR><TD BGCOLOR="#1D4ED8"><FONT COLOR="white"><B>TicketType</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">name (UQ), nameHi</TD></TR>
+    <TR><TD ALIGN="LEFT">price</TD></TR><TR><TD ALIGN="LEFT">isActive</TD></TR></TABLE>>];
+  DailyCapacity [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#EFF6FF">
+    <TR><TD BGCOLOR="#1D4ED8"><FONT COLOR="white"><B>DailyCapacity</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">visitDate (UQ)</TD></TR>
+    <TR><TD ALIGN="LEFT">capacity</TD></TR><TR><TD ALIGN="LEFT">bookedCount</TD></TR></TABLE>>];
+  Booking [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#F0FDF4">
+    <TR><TD BGCOLOR="#15803D"><FONT COLOR="white"><B>Booking</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">bookingCode (UQ)</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> userId</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> ticketTypeId</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> dailyCapacityId</TD></TR><TR><TD ALIGN="LEFT">quantity, unitPrice, totalAmount</TD></TR>
+    <TR><TD ALIGN="LEFT">status, target, refId</TD></TR><TR><TD ALIGN="LEFT">refName, date, slotId, slotLabel</TD></TR>
+    <TR><TD ALIGN="LEFT">itemsJson</TD></TR></TABLE>>];
+  Payment [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FFF7ED">
+    <TR><TD BGCOLOR="#C2410C"><FONT COLOR="white"><B>Payment</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> bookingId</TD></TR>
+    <TR><TD ALIGN="LEFT">amount, status, provider</TD></TR><TR><TD ALIGN="LEFT">providerReference, paidAt</TD></TR></TABLE>>];
+  IssuedTicket [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FFF7ED">
+    <TR><TD BGCOLOR="#C2410C"><FONT COLOR="white"><B>IssuedTicket</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> bookingId</TD></TR>
+    <TR><TD ALIGN="LEFT">qrToken (UQ)</TD></TR><TR><TD ALIGN="LEFT">status, issuedAt, scannedAt</TD></TR></TABLE>>];
+  Exhibition [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FAF5FF">
+    <TR><TD BGCOLOR="#7E22CE"><FONT COLOR="white"><B>Exhibition</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">name, nameHi, description</TD></TR><TR><TD ALIGN="LEFT">isActive</TD></TR></TABLE>>];
+  Show [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FAF5FF">
+    <TR><TD BGCOLOR="#7E22CE"><FONT COLOR="white"><B>Show</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">name, nameHi, description</TD></TR><TR><TD ALIGN="LEFT">venue, venueHi, isActive</TD></TR></TABLE>>];
+  SlotTemplate [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FAF5FF">
+    <TR><TD BGCOLOR="#7E22CE"><FONT COLOR="white"><B>SlotTemplate</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">type, refId</TD></TR><TR><TD ALIGN="LEFT">startTime, endTime, capacity</TD></TR></TABLE>>];
+  Admin [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#F1F5F9">
+    <TR><TD BGCOLOR="#475569"><FONT COLOR="white"><B>Admin</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">email (UQ), passwordHash</TD></TR><TR><TD ALIGN="LEFT">name, role</TD></TR></TABLE>>];
+  BookingItem [label=<<TABLE BORDER="1" STYLE="dashed" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3" BGCOLOR="#FEFCE8">
+    <TR><TD BGCOLOR="#A16207"><FONT COLOR="white"><B>BookingItem (proposed)</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> bookingId</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> exhibitionId / showId</TD></TR><TR><TD ALIGN="LEFT">quantity</TD></TR></TABLE>>];
+
+  User -> Booking [label="1 : N  makes"];
+  TicketType -> Booking [label="1 : N  priced as"];
+  DailyCapacity -> Booking [label="1 : N  holds"];
+  Booking -> Payment [label="1 : N  paid by"];
+  Booking -> IssuedTicket [label="1 : N  issues"];
+  Booking -> BookingItem [label="1 : N", style=dashed];
+  Exhibition -> BookingItem [label="1 : N", style=dashed];
+  Show -> BookingItem [label="1 : N", style=dashed];
+  SlotTemplate -> Exhibition [label="soft ref (type, refId)", style=dotted, arrowhead=none, arrowtail=none];
+  SlotTemplate -> Show [style=dotted, arrowhead=none, arrowtail=none];
+}

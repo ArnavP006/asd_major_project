@@ -1,0 +1,15 @@
+--- "My bookings" query WITHOUT index ---
+-------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=4774.06..4774.16 rows=40 width=289) (actual time=15.244..15.248 rows=40 loops=1)
+   Sort Key: "createdAt" DESC
+   Sort Method: quicksort  Memory: 28kB
+   ->  Seq Scan on booking_big  (cost=0.00..4773.00 rows=40 width=289) (actual time=0.169..15.221 rows=40 loops=1)
+ Execution Time: 15.271 ms
+--- same query WITH index (userId, createdAt) - same as Booking_userId_createdAt_idx ---
+-------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=150.25..150.35 rows=40 width=289) (actual time=0.118..0.120 rows=40 loops=1)
+   Sort Key: "createdAt" DESC
+   Sort Method: quicksort  Memory: 28kB
+   ->  Bitmap Heap Scan on booking_big  (cost=4.60..149.19 rows=40 width=289) (actual time=0.021..0.108 rows=40 loops=1)
+         ->  Bitmap Index Scan on idx_big_user_created  (cost=0.00..4.59 rows=40 width=0) (actual time=0.010..0.011 rows=40 loops=1)
+ Execution Time: 0.142 ms
