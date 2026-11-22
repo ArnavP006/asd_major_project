@@ -1,4 +1,3 @@
-// End-to-end demo: every application call is followed by a direct SQL check, proving data really reaches the DB.
 const pool = require('./db');
 const svc = require('./bookingService.pg');
 
@@ -47,7 +46,6 @@ const attempt = async (title, fn) => {
   await check(`SELECT "bookedCount" FROM "DailyCapacity" WHERE "visitDate" = '2026-11-22'`);
   await check(`SELECT status FROM "Payment" WHERE "bookingId" = $1`, [b2.id]);
 
-  // Concurrency: a day with ONE seat, two buyers at the same instant
   await pool.query(`
     DELETE FROM "IssuedTicket" WHERE "bookingId" IN (SELECT id FROM "Booking" WHERE date = '2026-12-25');
     DELETE FROM "Payment" WHERE "bookingId" IN (SELECT id FROM "Booking" WHERE date = '2026-12-25');

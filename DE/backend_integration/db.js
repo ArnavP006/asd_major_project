@@ -1,4 +1,3 @@
-// Connection pool (node-postgres).
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
@@ -27,7 +26,6 @@ const fileEnv = {
   ...loadEnvFile(path.resolve(__dirname, '.env')),
 };
 
-// Prioritize .env file, or clean environment variable (ignoring stale local 'museumx' exports)
 const connectionString =
   fileEnv.DATABASE_URL ||
   (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('/museumx') ? process.env.DATABASE_URL : null);
