@@ -1,0 +1,41 @@
+──────────────────────────────────────────────
+  MuseumX – Installation Guide
+──────────────────────────────────────────────
+
+STEP 1 ► Drag "MuseumX" into your Applications folder.
+
+STEP 2 ► macOS will show a warning:
+         "MuseumX is damaged and can't be opened."
+         This is normal for apps outside the App Store.
+
+STEP 3 ► Fix it in 10 seconds (choose ONE method):
+
+  ┌─ METHOD A: Terminal (recommended) ────────────┐
+  │                                               │
+  │  1. Open Terminal (Cmd+Space → "Terminal")    │
+  │  2. Paste and press Enter:                    │
+  │                                               │
+  │  xattr -cr /Applications/MuseumX.app         │
+  │                                               │
+  │  3. Double-click MuseumX to open it.          │
+  └───────────────────────────────────────────────┘
+
+  ┌─ METHOD B: System Settings ───────────────────┐
+  │                                               │
+  │  1. Try to open MuseumX → click Cancel        │
+  │  2. System Settings → Privacy & Security      │
+  │  3. Scroll down → click "Open Anyway"         │
+  │  4. Enter your Mac password → Open            │
+  └───────────────────────────────────────────────┘
+
+STEP 4 ► On first launch, a "Starting server…"
+         splash screen appears for ~5–10 seconds
+         while the backend connects to the database.
+         The app loads automatically when ready.
+
+NOTES:
+  • Requires an internet connection (cloud database).
+  • Works on Apple Silicon Macs (M1 / M2 / M3 / M4).
+  • The Gatekeeper bypass only needs to be done once.
+
+──────────────────────────────────────────────

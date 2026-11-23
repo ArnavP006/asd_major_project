@@ -129,7 +129,7 @@ Express handles API requests, booking operations, payment verification, authenti
 
 ### Database Architecture
 
-PostgreSQL stores visitors, administrators, tickets, exhibitions, bookings, payments and chatbot conversations.
+PostgreSQL stores visitors, administrators, ticket types, exhibitions, shows, slot templates, daily capacities, bookings, payments and issued tickets.
 
 ---
 
@@ -231,23 +231,20 @@ Launch the Electron desktop application using the root development script.
 
 ## 🗄️ Database Modules
 
-The planned database consists of the following entities:
+The database consists of the following 10 entities (defined in `schema.prisma`):
 
 | Entity | Description |
 |---|---|
 | Admin | Administrator accounts |
 | User | Museum visitors |
-| Ticket | Ticket categories and pricing |
+| TicketType | Ticket categories and pricing |
 | Exhibition | Museum exhibitions |
 | Show | Special museum shows |
-| TimeSlot | Scheduled entry and show timings |
+| SlotTemplate | Scheduled entry and show timing templates |
+| DailyCapacity | Daily visitor capacity tracking and limits |
 | Booking | Visitor reservations |
-| BookingItem | Individual items in a booking |
-| Payment | Transaction records |
-| QRCode | Digital ticket references |
-| TicketValidation | Entry validation records |
-| ChatSession | Chatbot sessions |
-| ChatMessage | Conversation history |
+| Payment | Transaction and payment verification records |
+| IssuedTicket | Digital tickets with unique QR tokens and gate scan tracking |
 
 ---
 

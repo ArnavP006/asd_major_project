@@ -5,13 +5,25 @@ import cors from 'cors';
 import helmet from 'helmet';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { prisma } from './db.js';
 import { signAdminToken, requireAdmin, signUserToken, requireUser, optionalUser } from './auth.js';
 
 var app = express();
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: ['http://localhost:5173', 'null'] }));
 app.use(express.json({ limit: '1mb' }));
+
+var authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts, try again later', code: 'RATE_LIMITED' },
+});
+app.use('/api/user/login', authLimiter);
+app.use('/api/user/register', authLimiter);
+app.use('/api/admin/login', authLimiter);
 
 
 function publicBooking(b) {
@@ -617,6 +629,11 @@ app.post('/api/payments/verify', async function (req, res) {
       return;
     }
 
+    if (booking.status === 'CONFIRMED') {
+      res.status(409).json({ error: 'This booking is already paid.', code: 'ALREADY_PAID' });
+      return;
+    }
+
     var failed = false;
     if (outcome == 'failure') {
       failed = true;
@@ -711,22 +728,22 @@ app.get('/api/bookings/:idOrCode', async function (req, res) {
       return;
     }
 
-    if (contact) {
-      var c = String(contact).toLowerCase().trim();
-      var userEmail = '';
-      var userPhone = '';
-      if (booking.user) {
-        userEmail = (booking.user.email || '').toLowerCase();
-        userPhone = (booking.user.phone || '').toLowerCase();
-      }
-      var matches = false;
-      if (userEmail.includes(c) || userPhone.includes(c) || c.includes(userEmail)) {
-        matches = true;
-      }
-      if (!matches) {
-        res.status(404).json({ error: 'No booking matches that contact.', code: 'BOOKING_NOT_FOUND' });
-        return;
-      }
+    if (!contact) {
+      res.status(400).json({ error: 'Contact (email or phone) is required to look up a booking.', code: 'CONTACT_REQUIRED' });
+      return;
+    }
+
+    var c = String(contact).toLowerCase().trim();
+    var userEmail = '';
+    var userPhone = '';
+    if (booking.user) {
+      userEmail = (booking.user.email || '').toLowerCase();
+      userPhone = (booking.user.phone || '').toLowerCase();
+    }
+    var matches = c === userEmail || c === userPhone;
+    if (!matches) {
+      res.status(404).json({ error: 'No booking matches that contact.', code: 'BOOKING_NOT_FOUND' });
+      return;
     }
 
     res.json(publicBooking(booking));
@@ -760,22 +777,22 @@ app.post('/api/bookings/:idOrCode/cancel', async function (req, res) {
       return;
     }
 
-    if (contact) {
-      var c = String(contact).toLowerCase().trim();
-      var userEmail = '';
-      var userPhone = '';
-      if (booking.user) {
-        userEmail = (booking.user.email || '').toLowerCase();
-        userPhone = (booking.user.phone || '').toLowerCase();
-      }
-      var matches = false;
-      if (userEmail.includes(c) || userPhone.includes(c)) {
-        matches = true;
-      }
-      if (!matches) {
-        res.status(404).json({ error: 'Contact does not match booking.', code: 'CONTACT_MISMATCH' });
-        return;
-      }
+    if (!contact) {
+      res.status(400).json({ error: 'Contact (email or phone) is required to cancel a booking.', code: 'CONTACT_REQUIRED' });
+      return;
+    }
+
+    var c = String(contact).toLowerCase().trim();
+    var userEmail = '';
+    var userPhone = '';
+    if (booking.user) {
+      userEmail = (booking.user.email || '').toLowerCase();
+      userPhone = (booking.user.phone || '').toLowerCase();
+    }
+    var matches = c === userEmail || c === userPhone;
+    if (!matches) {
+      res.status(404).json({ error: 'Contact does not match booking.', code: 'CONTACT_MISMATCH' });
+      return;
     }
 
     if (booking.status == 'CANCELLED') {
@@ -814,7 +831,7 @@ app.post('/api/bookings/:idOrCode/cancel', async function (req, res) {
 });
 
 // scan the ticket at the gate
-app.post('/api/tickets/validate', async function (req, res) {
+app.post('/api/tickets/validate', requireAdmin, async function (req, res) {
   try {
     var code = req.body.code;
     var normalised = String(code || '').trim();
@@ -1405,6 +1422,22 @@ app.delete('/api/admin/ticket-types/:id', requireAdmin, async function (req, res
     console.log(err);
     res.status(500).json({ error: 'Something went wrong', code: 'SERVER_ERROR' });
   }
+});
+
+// 404 handler for unknown routes
+app.use(function (req, res) {
+  res.status(404).json({ error: 'Route not found', code: 'NOT_FOUND' });
+});
+
+// Central error handler
+app.use(function (err, req, res, next) {
+  console.error(err);
+  var status = err.type === 'entity.parse.failed' ? 400 : 500;
+  res.status(status).json(
+    status === 400
+      ? { error: 'Malformed JSON body', code: 'BAD_REQUEST' }
+      : { error: 'Something went wrong', code: 'SERVER_ERROR' }
+  );
 });
 
 // start the server
