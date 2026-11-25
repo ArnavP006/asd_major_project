@@ -43,6 +43,7 @@ export function initialChat(lang = 'en') {
     errorKey: null,
     errorMessage: null,
     recommendation: null,
+    lastExhibition: null,
   };
 }
 
@@ -71,7 +72,9 @@ export function enterStep(
   const definition = flow[stepId];
   if (!definition) return state;
 
-  const resolvedOptions = normalizeOptions(options ?? definition.options);
+  const definitionOptions =
+    typeof definition.options === 'function' ? definition.options(state) : definition.options;
+  const resolvedOptions = normalizeOptions(options ?? definitionOptions);
   const isAsync = Boolean(definition.load || definition.action);
   const nextState = {
     ...state,
@@ -198,7 +201,8 @@ function back(state) {
   const history = [...state.history];
   const previous = history.pop();
   if (!flow[previous]) return enterStep({ ...state, history }, 'start');
-  return enterStep({ ...state, history }, previous, { pushHistory: false });
+  const params = previous === 'infoExhibition' && state.lastExhibition ? state.lastExhibition : undefined;
+  return enterStep({ ...state, history }, previous, { pushHistory: false, params });
 }
 
 export function pick(state, optionId) {
@@ -222,9 +226,17 @@ export function pick(state, optionId) {
 
   if (state.step === 'pickExhibition' || state.step === 'pickShow') {
     if (!option) return retry(state);
+    const target = definition.next;
+    // The exhibition info step shows the picked exhibition's details and,
+    // when a 3D model exists, the preview option (FR-V4).
+    const name = state.lang === 'hi' ? option.labelHi || option.label : option.label;
+    const description =
+      state.lang === 'hi' ? option.descriptionHi || option.description : option.description;
+    const params = target === 'infoExhibition' ? { name, description } : undefined;
     return enterStep(
       {
         ...base,
+        lastExhibition: target === 'infoExhibition' ? { name, description } : state.lastExhibition,
         booking: {
           ...state.booking,
           refId: option.value,
@@ -232,8 +244,15 @@ export function pick(state, optionId) {
           refNameHi: option.labelHi || option.label,
         },
       },
-      definition.next,
+      target,
+      { params },
     );
+  }
+
+  if (state.step === 'infoExhibition' && optionId === 'preview') {
+    // The chat page opens the viewer on this option; the flow stays here so the
+    // visitor can book right after closing it (FR-V5).
+    return base;
   }
 
   if (state.step === 'slot') {

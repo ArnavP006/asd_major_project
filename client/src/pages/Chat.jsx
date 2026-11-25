@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useChat } from '../chatbot/useChat';
@@ -11,6 +11,9 @@ import SummaryCard from '../chatbot/components/SummaryCard';
 import CancelControl from '../chatbot/components/CancelControl';
 import PaymentSheet from '../chatbot/components/PaymentSheet';
 import SignInRequiredControl from '../chatbot/components/SignInRequiredControl';
+import { modelsFor } from '../viewer3d/models';
+
+const ViewerLazy = lazy(() => import('../viewer3d/ExhibitViewer'));
 
 function ChatControl({ state, chat }) {
   switch (state.control) {
@@ -35,7 +38,22 @@ export default function Chat() {
   const chat = useChat();
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
+  const [preview, setPreview] = useState(null); // { url, title } or null
   const endRef = useRef(null);
+
+  const pick = (optionId) => {
+    if (optionId === 'preview' && chat.state.step === 'infoExhibition') {
+      const items = modelsFor(chat.state.booking.refId);
+      if (items) {
+        setPreview({
+          items,
+          title:
+            chat.state.lang === 'hi' ? chat.state.booking.refNameHi : chat.state.booking.refName,
+        });
+      }
+    }
+    chat.pick(optionId);
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -98,7 +116,7 @@ export default function Chat() {
           <MessageList messages={chat.state.messages} pending={chat.pending} />
           <div className="chat-panel__interactive">
             <ChatControl state={chat.state} chat={chat} />
-            <QuickReplies options={chat.state.currentOptions} onPick={chat.pick} />
+            <QuickReplies options={chat.state.currentOptions} onPick={pick} />
           </div>
           <div ref={endRef} />
         </div>
@@ -127,6 +145,16 @@ export default function Chat() {
         onComplete={chat.completePayment}
         onCancel={chat.cancelPayment}
       />
+
+      {preview && (
+        <Suspense fallback={null}>
+          <ViewerLazy
+            items={preview.items}
+            title={preview.title}
+            onClose={() => setPreview(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

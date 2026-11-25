@@ -104,9 +104,36 @@ describe('booking flow', () => {
     });
 
     run({ type: 'PICK', optionId: 'exhibitions:2' });
-    expect(state.step).toBe('date');
+    expect(state.step).toBe('infoExhibition');
     expect(state.booking.refId).toBe(2);
     expect(state.booking.refName).toBe('Human Biology');
+    // Exhibition 2 has two models (heart, DNA), so the preview option shows.
+    expect(state.currentOptions.map((option) => option.id)).toEqual(['preview', 'book', 'menu']);
+
+    run({ type: 'PICK', optionId: 'book' });
+    expect(state.step).toBe('date');
+  });
+
+  it('offers the 3D preview only for exhibitions with a model', () => {
+    run({ type: 'PICK', optionId: 'book' });
+    run({ type: 'PICK', optionId: 'exhibition' });
+    run({
+      type: 'LOADED',
+      options: [
+        { id: 'exhibitions:1', value: 1, label: 'Invention', labelHi: 'आविष्कार', description: 'd1', descriptionHi: 'd1hi' },
+        { id: 'exhibitions:2', value: 2, label: 'Human Biology', labelHi: 'मानव जीव विज्ञान', description: 'd2', descriptionHi: 'd2hi' },
+      ],
+    });
+
+    run({ type: 'PICK', optionId: 'exhibitions:1' });
+    expect(state.step).toBe('infoExhibition');
+    expect(state.currentOptions.map((option) => option.id)).toEqual(['preview', 'book', 'menu']);
+
+    // Picking preview keeps the flow on the info step (FR-V5).
+    run({ type: 'PICK', optionId: 'preview' });
+    expect(state.step).toBe('infoExhibition');
+    expect(state.booking.refId).toBe(1);
+    expect(state.currentOptions.map((option) => option.id)).toEqual(['preview', 'book', 'menu']);
   });
 
   it('keeps the booking when the language changes', () => {
