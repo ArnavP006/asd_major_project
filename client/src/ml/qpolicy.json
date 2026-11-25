@@ -1,0 +1,133 @@
+{
+  "metadata": {
+    "algorithm": "tabular-q-learning",
+    "learningRate": 0.1,
+    "discountFactor": 0.9,
+    "episodes": 4000,
+    "seed": 20261125,
+    "epsilon": {
+      "start": 1,
+      "end": 0.05,
+      "decayEpisodes": 2500
+    },
+    "actions": [
+      "keep",
+      "earlier",
+      "later"
+    ],
+    "dayTypes": [
+      "weekday",
+      "weekend",
+      "holiday"
+    ],
+    "loadBuckets": {
+      "low": "load < 0.50",
+      "medium": "0.50 <= load <= 0.80",
+      "high": "load > 0.80"
+    },
+    "rewardDesign": {
+      "keepLow": 1,
+      "keepMedium": 0.2,
+      "keepHigh": -1,
+      "suggestHighLower": 1,
+      "suggestLow": -0.5,
+      "suggestAlternativeHigh": -1,
+      "suggestMediumLower": 0.5,
+      "suggestMediumNotLower": -0.5,
+      "noAlternative": -0.2
+    },
+    "demandPeaks": "midday on weekdays, louder weekends and holidays"
+  },
+  "policy": {
+    "weekday_low": {
+      "dayType": "weekday",
+      "loadBucket": "low",
+      "action": "keep",
+      "qValues": {
+        "keep": 6.3067,
+        "earlier": 4.0665,
+        "later": 3.9529
+      }
+    },
+    "weekday_medium": {
+      "dayType": "weekday",
+      "loadBucket": "medium",
+      "action": "keep",
+      "qValues": {
+        "keep": 5.5841,
+        "earlier": 4.4107,
+        "later": 3.8909
+      }
+    },
+    "weekday_high": {
+      "dayType": "weekday",
+      "loadBucket": "high",
+      "action": "later",
+      "qValues": {
+        "keep": 2.6699,
+        "earlier": 4.0301,
+        "later": 5.9269
+      }
+    },
+    "weekend_low": {
+      "dayType": "weekend",
+      "loadBucket": "low",
+      "action": "keep",
+      "qValues": {
+        "keep": 6.2355,
+        "earlier": 3.7134,
+        "later": 3.0883
+      }
+    },
+    "weekend_medium": {
+      "dayType": "weekend",
+      "loadBucket": "medium",
+      "action": "keep",
+      "qValues": {
+        "keep": 5.3569,
+        "earlier": 4.0925,
+        "later": 3.5218
+      }
+    },
+    "weekend_high": {
+      "dayType": "weekend",
+      "loadBucket": "high",
+      "action": "later",
+      "qValues": {
+        "keep": 1.7606,
+        "earlier": 3.6318,
+        "later": 5.6832
+      }
+    },
+    "holiday_low": {
+      "dayType": "holiday",
+      "loadBucket": "low",
+      "action": "keep",
+      "qValues": {
+        "keep": 6.0858,
+        "earlier": 1.0792,
+        "later": 1.5037
+      }
+    },
+    "holiday_medium": {
+      "dayType": "holiday",
+      "loadBucket": "medium",
+      "action": "keep",
+      "qValues": {
+        "keep": 5.3739,
+        "earlier": 2.3852,
+        "later": 2.8577
+      }
+    },
+    "holiday_high": {
+      "dayType": "holiday",
+      "loadBucket": "high",
+      "action": "earlier",
+      "qValues": {
+        "keep": 2.2837,
+        "earlier": 5.8895,
+        "later": 2.2762
+      }
+    }
+  }
+}

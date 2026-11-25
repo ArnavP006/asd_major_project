@@ -73,6 +73,88 @@ MuseumX addresses these problems through an integrated digital ticketing platfor
 
 ---
 
+## 🥽 AR/VR and AI Features
+
+### Q-learning slot recommender
+
+After a visitor picks a time slot, MuseumX checks how full that slot is and asks a
+trained Q-learning policy whether to keep it or move the visitor to a quieter
+slot. When a quieter slot exists in the recommended direction, the chatbot shows
+two choices — **switch to the quieter slot** or **keep my slot** — in both English
+and Hindi. If the policy is unavailable, the state is unknown, or no quieter slot
+exists, the original selection is kept and the normal booking flow continues.
+
+**Occupancy.** A slot's load is `booked ÷ capacity`. Missing, negative or
+zero-capacity values are treated as unknown, never as a division by zero.
+
+**State.** `day type × occupancy bucket`:
+
+| Component | Values |
+|---|---|
+| Day type | `weekday`, `weekend`, `holiday` |
+| Load bucket | `low` (< 0.50), `medium` (0.50 – 0.80), `high` (> 0.80) |
+
+**Actions.** `keep`, `earlier`, `later`.
+
+**Reward design.**
+
+| Situation | Reward |
+|---|---|
+| Keep at low load | +1 |
+| Keep at medium load | +0.2 |
+| Keep at high load | −1 |
+| Suggest at high load, alternative has lower load | +1 |
+| Suggest at medium load, alternative has lower load | +0.5 |
+| Suggest at medium load, alternative is not lower | −0.5 |
+| Suggest at low load | −0.5 |
+| Suggested alternative is also high load | −1 |
+| No alternative slot in that direction | −0.2 |
+
+Medium-load rewards are defined explicitly so training and runtime behaviour stay
+consistent. Training uses tabular Q-learning with ε-greedy exploration
+(ε decays from 1.0 to 0.05), learning rate `0.1`, discount factor `0.9`,
+4000 episodes and a seeded simulation of visitor arrivals peaking at midday and
+on weekends/holidays.
+
+**Files.**
+
+| File | Purpose |
+|---|---|
+| `client/src/ml/train.mjs` | Trains the agent and writes `qpolicy.json` |
+| `client/src/ml/qpolicy.json` | Generated policy: best action and Q-values per state |
+| `client/src/ml/usePolicy.js` | Runtime lookup, occupancy math, quieter-slot search and safe fallbacks |
+| `client/src/chatbot/engine/reducer.js` | Runs the recommendation step after slot selection |
+| `client/src/admin/PolicyHeatmap.jsx` | Admin heatmap of the learned policy (day types × load buckets) |
+
+**Run the training script** (from the repository root):
+
+```bash
+node client/src/ml/train.mjs
+```
+
+The script validates that all nine states were sampled, checks the exported
+actions and Q-values, and rewrites `client/src/ml/qpolicy.json`. The file is
+included in the repository so the packaged Electron app can load the policy
+without any network or CDN dependency.
+
+### Course concepts
+
+| Course concept | Project application |
+|---|---|
+| Q-learning | Learns a slot recommendation policy from simulated visitor demand |
+| Reinforcement learning | State, action, reward and policy learning |
+| Epsilon-greedy strategy | Balances exploration and exploitation during training |
+| Policy visualization | Admin heatmap showing the learned action per state |
+
+### AR/VR status
+
+This build of MuseumX does **not** include a 3D exhibit viewer or a Google
+Cardboard / VR mode. Those are a separate team workstream and are not claimed
+as implemented here. The chatbot booking flow, Q-learning recommender, policy
+heatmap and documentation above are the features present in this repository.
+
+---
+
 ## 🛠️ Technology Stack
 
 | Technology | Purpose |
@@ -149,6 +231,7 @@ MuseumX/
 │       ├── pages/
 │       ├── chatbot/
 │       ├── admin/
+│       ├── ml/
 │       ├── App.jsx
 │       └── main.jsx
 │

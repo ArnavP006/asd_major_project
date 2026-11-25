@@ -106,6 +106,7 @@
     "askWhichShow": "Which show would you like to watch?",
     "askDate": "Which day are you visiting? Pick a date below or type it — for example 2026-11-20.",
     "askSlot": "Pick a time slot. Sold-out slots cannot be chosen.",
+    "recommend": "Your selected slot is getting busy. The {{alternative}} slot is quieter — switch to it, or keep your current slot.",
     "askCounts": "How many tickets for each category?",
     "askVisitor": "Who should the ticket be issued to?",
     "summaryIntro": "Please check the booking before paying.",
@@ -177,6 +178,8 @@
       "entry": "General entry",
       "exhibition": "Exhibition",
       "show": "Show",
+      "recommendAccept": "Switch to the quieter slot",
+      "recommendKeep": "Keep my slot",
       "menu": "Main menu",
       "timings": "Opening hours",
       "prices": "Ticket prices",
@@ -295,6 +298,27 @@
       "hours": "Visitors by slot hour",
       "popular": "Popular items",
       "empty": "No data for this range yet."
+    },
+    "policy": {
+      "title": "Slot recommendation policy",
+      "lead": "Learned action per day type and occupancy bucket, read from qpolicy.json.",
+      "empty": "No policy data available.",
+      "legend": "Legend",
+      "day": {
+        "weekday": "Weekday",
+        "weekend": "Weekend",
+        "holiday": "Holiday"
+      },
+      "load": {
+        "low": "Low (< 50%)",
+        "medium": "Medium (50–80%)",
+        "high": "High (> 80%)"
+      },
+      "action": {
+        "keep": "Keep",
+        "earlier": "Earlier",
+        "later": "Later"
+      }
     },
     "bookings": {
       "title": "Bookings",

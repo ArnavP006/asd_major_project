@@ -7,6 +7,7 @@ import Loader from '../components/Loader';
 import ErrorBox from '../components/ErrorBox';
 import EmptyState from '../components/EmptyState';
 import { DailyChart, HoursChart } from './charts/DashboardCharts';
+import PolicyHeatmap from './PolicyHeatmap';
 
 function Stat({ label, value, accent = false }) {
   return (
@@ -62,6 +63,8 @@ export default function Dashboard() {
               <HoursChart data={data.peakHours} />
             </article>
           </section>
+
+          <PolicyHeatmap />
 
           <section className="card">
             <h2>{t('admin.dashboard.popular')}</h2>

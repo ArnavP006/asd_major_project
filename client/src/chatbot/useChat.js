@@ -112,6 +112,8 @@ export function useChat() {
                 label: slot.label,
                 startTime: slot.startTime,
                 remaining: slot.remaining,
+                booked: slot.booked,
+                capacity: slot.capacity,
                 soldOut: slot.soldOut,
               },
             })),
