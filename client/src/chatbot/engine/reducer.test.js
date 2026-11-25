@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { addDays, todayISO } from '../../lib/format';
+import { addDays, isoDate, todayISO } from '../../lib/format';
 import { initialChat, reducer } from './reducer';
 
 const future = addDays(todayISO(), 2);
@@ -137,6 +137,93 @@ describe('booking flow', () => {
     expect(state.step).toBe('ticket');
     expect(state.ticket).toEqual(ticket);
     expect(lastMessage().ticket).toEqual(ticket);
+  });
+});
+
+describe('Q-learning slot recommendation', () => {
+  const nextWeekend = () => {
+    const [year, month, day] = todayISO().split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    do {
+      date.setDate(date.getDate() + 1);
+    } while (date.getDay() !== 0 && date.getDay() !== 6);
+    return isoDate(date);
+  };
+
+  const goToSlots = (options) => {
+    run({ type: 'PICK', optionId: 'book' });
+    run({ type: 'PICK', optionId: 'entry' });
+    run({ type: 'SET_DATE', value: nextWeekend() });
+    run({ type: 'LOADED', textKey: 'askSlot', options });
+  };
+
+  const crowdedSlots = [
+    { id: 'slot:1', value: '1', meta: { label: '11:00 – 12:00', startTime: '11:00', remaining: 70, booked: 30, capacity: 100, soldOut: false } },
+    { id: 'slot:2', value: '2', meta: { label: '13:00 – 14:00', startTime: '13:00', remaining: 8, booked: 92, capacity: 100, soldOut: false } },
+    { id: 'slot:3', value: '3', meta: { label: '14:00 – 15:00', startTime: '14:00', remaining: 40, booked: 60, capacity: 100, soldOut: false } },
+    { id: 'slot:4', value: '4', meta: { label: '15:00 – 16:00', startTime: '15:00', remaining: 20, booked: 80, capacity: 100, soldOut: false } },
+  ];
+
+  it('offers the nearest quieter slot in the learned direction', () => {
+    goToSlots(crowdedSlots);
+    run({ type: 'PICK', optionId: 'slot:2' });
+
+    expect(state.step).toBe('recommend');
+    expect(state.booking.slotId).toBe('2');
+    expect(state.recommendation.action).toBe('later');
+    expect(state.recommendation.slotId).toBe('3');
+    expect(lastMessage().textKey).toBe('recommend');
+    expect(lastMessage().params).toEqual({ alternative: '14:00 – 15:00' });
+    expect(state.currentOptions.map((option) => option.id)).toEqual(['recommendAccept', 'recommendKeep']);
+  });
+
+  it('accept switches the booking slot and the summary follows it', () => {
+    goToSlots(crowdedSlots);
+    run({ type: 'PICK', optionId: 'slot:2' });
+    run({ type: 'PICK', optionId: 'recommendAccept' });
+
+    expect(state.step).toBe('counts');
+    expect(state.booking.slotId).toBe('3');
+    expect(state.booking.slotLabel).toBe('14:00 – 15:00');
+    expect(state.recommendation).toBeNull();
+
+    run({ type: 'SET_COUNTS', counts: { 1: 2 } });
+    run({ type: 'SET_VISITOR', visitor: { name: 'Asha Rao', email: 'asha@example.com', phone: '' } });
+    expect(state.step).toBe('summary');
+    expect(state.booking.slotId).toBe('3');
+    expect(state.booking.slotLabel).toBe('14:00 – 15:00');
+  });
+
+  it('keep preserves the originally selected slot', () => {
+    goToSlots(crowdedSlots);
+    run({ type: 'PICK', optionId: 'slot:2' });
+    run({ type: 'PICK', optionId: 'recommendKeep' });
+
+    expect(state.step).toBe('counts');
+    expect(state.booking.slotId).toBe('2');
+    expect(state.booking.slotLabel).toBe('13:00 – 14:00');
+  });
+
+  it('continues safely when no quieter slot exists', () => {
+    goToSlots([
+      crowdedSlots[1],
+      { id: 'slot:3', value: '3', meta: { label: '14:00 – 15:00', startTime: '14:00', remaining: 5, booked: 95, capacity: 100, soldOut: false } },
+      { id: 'slot:4', value: '4', meta: { label: '15:00 – 16:00', startTime: '15:00', remaining: 0, booked: 100, capacity: 100, soldOut: true } },
+    ]);
+    run({ type: 'PICK', optionId: 'slot:2' });
+
+    expect(state.step).toBe('counts');
+    expect(state.recommendation).toBeNull();
+    expect(state.booking.slotId).toBe('2');
+  });
+
+  it('continues safely when occupancy data is missing', () => {
+    goToSlots([{ id: 'slot:1', value: '1', meta: { label: '10:00 – 11:00', startTime: '10:00', soldOut: false } }]);
+    run({ type: 'PICK', optionId: 'slot:1' });
+
+    expect(state.step).toBe('counts');
+    expect(state.recommendation).toBeNull();
+    expect(state.booking.slotId).toBe('1');
   });
 });
 

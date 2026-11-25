@@ -2,6 +2,7 @@
 import { flow } from './flow';
 import * as nlu from './nlu';
 import { todayISO } from '../../lib/format';
+import { dayTypeOf, findQuieterSlot, occupancyOf, recommend } from '../../ml/usePolicy';
 
 let sequence = 0;
 const nextId = () => `msg-${++sequence}`;
@@ -41,6 +42,7 @@ export function initialChat(lang = 'en') {
     entryId: 0,
     errorKey: null,
     errorMessage: null,
+    recommendation: null,
   };
 }
 
@@ -137,7 +139,58 @@ function retry(state, typedText) {
 }
 
 function resetForNewBooking(state) {
-  return { ...state, booking: { ...emptyBooking(), visitor: state.booking.visitor } };
+  return {
+    ...state,
+    booking: { ...emptyBooking(), visitor: state.booking.visitor },
+    recommendation: null,
+  };
+}
+
+/**
+ * After a slot is picked, evaluate its occupancy with the trained policy and
+ * look for the nearest quieter slot in the recommended direction.
+ * Returns null (keep the flow unchanged) whenever anything is missing.
+ */
+function buildRecommendation(state, option) {
+  try {
+    const meta = option.meta || {};
+    const load = occupancyOf(meta.booked, meta.capacity);
+    if (load == null) return null;
+
+    const dayType = dayTypeOf(state.booking.date);
+    if (!dayType) return null;
+
+    const action = recommend({ dayType, load });
+    if (action !== 'earlier' && action !== 'later') return null;
+
+    const selected = {
+      id: option.value,
+      startTime: meta.startTime,
+      booked: meta.booked,
+      capacity: meta.capacity,
+    };
+    const slots = state.currentOptions.map((row) => ({
+      id: row.value,
+      startTime: row.meta?.startTime,
+      booked: row.meta?.booked,
+      capacity: row.meta?.capacity,
+      soldOut: row.meta?.soldOut,
+    }));
+
+    const alternative = findQuieterSlot({ slots, selected, action });
+    if (!alternative) return null;
+
+    const altOption = state.currentOptions.find((row) => row.value === alternative.id);
+    return {
+      action,
+      dayType,
+      load,
+      slotId: alternative.id,
+      slotLabel: altOption?.meta?.label || altOption?.label || '',
+    };
+  } catch {
+    return null;
+  }
 }
 
 function back(state) {
@@ -186,10 +239,33 @@ export function pick(state, optionId) {
   if (state.step === 'slot') {
     if (!option) return retry(state);
     if (option.meta?.soldOut) return addBot(base, 'slotSoldOut', promptOptions(state));
+    const booking = { ...state.booking, slotId: option.value, slotLabel: option.meta?.label || '' };
+    const recommendation = buildRecommendation(state, option);
+    if (!recommendation) return enterStep({ ...base, booking, recommendation: null }, 'counts');
     return enterStep(
-      { ...base, booking: { ...state.booking, slotId: option.value, slotLabel: option.meta?.label || '' } },
-      'counts',
+      { ...base, booking, recommendation },
+      'recommend',
+      { params: { alternative: recommendation.slotLabel } },
     );
+  }
+
+  if (state.step === 'recommend') {
+    if (optionId === 'recommendAccept' && state.recommendation) {
+      return enterStep(
+        {
+          ...base,
+          recommendation: null,
+          booking: {
+            ...state.booking,
+            slotId: state.recommendation.slotId,
+            slotLabel: state.recommendation.slotLabel,
+          },
+        },
+        'counts',
+      );
+    }
+    if (optionId === 'recommendKeep') return enterStep({ ...base, recommendation: null }, 'counts');
+    return retry(state);
   }
 
   if (state.step === 'date' || state.step === 'counts' || state.step === 'visitor' || state.step === 'cancelAsk') {
@@ -229,7 +305,10 @@ function setDate(state, value, display) {
     return addBot(state, 'invalidDate', { control: 'date' });
   }
   const base = addUser(state, undefined, { text: display || value });
-  return enterStep({ ...base, booking: { ...state.booking, date: value, slotId: null, slotLabel: null } }, 'slot');
+  return enterStep(
+    { ...base, recommendation: null, booking: { ...state.booking, date: value, slotId: null, slotLabel: null } },
+    'slot',
+  );
 }
 
 function setCounts(state, counts, display) {

@@ -36,6 +36,11 @@ export const flow = {
     say: 'askSlot',
     next: 'counts',
   },
+  recommend: {
+    say: 'recommend',
+    options: ['recommendAccept', 'recommendKeep'],
+    next: { recommendAccept: 'counts', recommendKeep: 'counts' },
+  },
   counts: {
     say: 'askCounts',
     control: 'counts',
