@@ -1,4 +1,6 @@
 
+import { modelsFor } from '../../viewer3d/models';
+
 export const flow = {
   authRequired: {
     say: 'authRequiredMessage',
@@ -19,7 +21,16 @@ export const flow = {
   pickExhibition: {
     load: 'exhibitions',
     say: 'askWhichExhibition',
-    next: 'date',
+    next: 'infoExhibition',
+  },
+  infoExhibition: {
+    say: 'exhibitionInfo',
+    options: (ctx) => [...(modelsFor(ctx.booking.refId) ? ['preview'] : []), 'book', 'menu'],
+    next: {
+      preview: { action: 'openPreview', then: 'infoExhibition' },
+      book: 'date',
+      menu: 'start',
+    },
   },
   pickShow: {
     load: 'shows',

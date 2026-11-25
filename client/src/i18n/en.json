@@ -103,6 +103,14 @@
     "welcome": "Namaste! I can book your museum tickets, share timings and prices, or cancel a booking. What would you like to do?",
     "askTarget": "What would you like to visit?",
     "askWhichExhibition": "Which exhibition would you like to see?",
+    "exhibitionInfo": "{{name}} — {{description}} What would you like to do?",
+    "viewer": {
+      "hint": "Drag to rotate, scroll or pinch to zoom",
+      "loading": "Loading 3D model",
+      "error": "Could not load the 3D model",
+      "close": "Close",
+      "cardboard": "Cardboard mode"
+    },
     "askWhichShow": "Which show would you like to watch?",
     "askDate": "Which day are you visiting? Pick a date below or type it — for example 2026-11-20.",
     "askSlot": "Pick a time slot. Sold-out slots cannot be chosen.",
@@ -178,6 +186,7 @@
       "entry": "General entry",
       "exhibition": "Exhibition",
       "show": "Show",
+      "preview": "Preview in 3D",
       "recommendAccept": "Switch to the quieter slot",
       "recommendKeep": "Keep my slot",
       "menu": "Main menu",
