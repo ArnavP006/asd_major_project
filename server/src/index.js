@@ -704,6 +704,26 @@ app.post('/api/payments/verify', async function (req, res) {
   }
 });
 
+// Compare a visitor-supplied contact with the account's email/phone.
+// Emails are compared case-insensitively; phones are compared by their
+// last 10 digits so +91 prefixes, spaces, dashes and parentheses match.
+function contactMatches(contact, user) {
+  var c = String(contact || '').toLowerCase().trim();
+  if (!c || !user) return false;
+  var email = String(user.email || '').toLowerCase().trim();
+  var phone = String(user.phone || '').toLowerCase().trim();
+  if (email && c === email) return true;
+  if (!phone) return false;
+  if (c === phone) return true;
+  var cDigits = c.replace(/\D/g, '');
+  var pDigits = phone.replace(/\D/g, '');
+  if (!cDigits) return false;
+  if (cDigits.length >= 10 && pDigits.length >= 10) {
+    return cDigits.slice(-10) === pDigits.slice(-10);
+  }
+  return cDigits === pDigits;
+}
+
 // get one booking
 app.get('/api/bookings/:idOrCode', async function (req, res) {
   try {
@@ -733,15 +753,7 @@ app.get('/api/bookings/:idOrCode', async function (req, res) {
       return;
     }
 
-    var c = String(contact).toLowerCase().trim();
-    var userEmail = '';
-    var userPhone = '';
-    if (booking.user) {
-      userEmail = (booking.user.email || '').toLowerCase();
-      userPhone = (booking.user.phone || '').toLowerCase();
-    }
-    var matches = c === userEmail || c === userPhone;
-    if (!matches) {
+    if (!contactMatches(contact, booking.user)) {
       res.status(404).json({ error: 'No booking matches that contact.', code: 'BOOKING_NOT_FOUND' });
       return;
     }
@@ -782,15 +794,7 @@ app.post('/api/bookings/:idOrCode/cancel', async function (req, res) {
       return;
     }
 
-    var c = String(contact).toLowerCase().trim();
-    var userEmail = '';
-    var userPhone = '';
-    if (booking.user) {
-      userEmail = (booking.user.email || '').toLowerCase();
-      userPhone = (booking.user.phone || '').toLowerCase();
-    }
-    var matches = c === userEmail || c === userPhone;
-    if (!matches) {
+    if (!contactMatches(contact, booking.user)) {
       res.status(404).json({ error: 'Contact does not match booking.', code: 'CONTACT_MISMATCH' });
       return;
     }
