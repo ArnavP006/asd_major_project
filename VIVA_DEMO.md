@@ -58,8 +58,10 @@ curl -o /dev/null -w "%{http_code}\n" -X POST http://localhost:4000/api/bookings
 ### c) Terminal
 
 ```bash
-cd server && DEBUG="prisma:query" node src/index.js
+cd server && PRISMA_QUERY_LOG=1 node src/index.js
 ```
+
+(`db.js` turns query logging on when `PRISMA_QUERY_LOG=1`; Prisma 5.22 ignores the `DEBUG` variable, so the constructor option is the reliable way.)
 
 ### d) Speaking script (~150 words)
 
@@ -288,7 +290,7 @@ curl -s -D - -o /dev/null http://localhost:4000/api/health | grep -iE "x-dns|x-f
 - **Related data:** booking queries use `include: { user, ticketType, dailyCapacity, payments, issuedTickets }` — Prisma generates the joins; **no queries inside loops**. `/api/slots` runs exactly two queries (templates + active bookings) and aggregates in memory.
 - **List endpoint:** `/api/admin/bookings` supports `status` filter + `search` (case-insensitive contains on code/name/email), `orderBy createdAt desc`, `skip/take` pagination, **pageSize clamped to 1–100** (lines 949–952) — a `pageSize=500` request comes back with `pageSize: 100`.
 - **Non-blocking:** all I/O is `async/await` — Prisma queries, `bcrypt.hash/compare` (async variants), `fetch`. **Zero `fs.*Sync` calls** (grepped). No request handler blocks the event loop.
-- **Query logging:** not on by default; enable with `DEBUG="prisma:query"` (no code change needed).
+- **Query logging:** off by default; `db.js` enables it when the server starts with `PRISMA_QUERY_LOG=1`.
 
 ### b) Curl set
 
@@ -313,7 +315,7 @@ curl -s http://localhost:4000/api/user/bookings -H "Authorization: Bearer $USER_
 
 ```bash
 cd server
-DEBUG="prisma:query" node src/index.js
+PRISMA_QUERY_LOG=1 node src/index.js
 # in a second terminal, fire one request:
 curl -s "http://localhost:4000/api/user/bookings" -H "Authorization: Bearer $USER_TOKEN" > /dev/null
 # terminal shows: prisma:query SELECT ... FROM "Booking" LEFT JOIN ... WHERE ...
@@ -346,7 +348,7 @@ curl -s "http://localhost:4000/api/user/bookings" -H "Authorization: Bearer $USE
 - [ ] `server/.env` has real `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET` — and **the terminal never shows a `cat .env`**
 - [ ] DB seeded: `cd server && node prisma/seed.js` (idempotent)
 - [ ] Fresh tokens generated right before recording (user 30 d, admin 12 h — both long-lived, but regenerate anyway)
-- [ ] Server running with `DEBUG="prisma:query" node src/index.js` in a **dedicated** terminal (SQL visible)
+- [ ] Server running with `PRISMA_QUERY_LOG=1 node src/index.js` in a **dedicated** terminal (SQL visible)
 - [ ] Terminal font ≥ 18 px; editor at the exact line numbers; only one terminal shows output
 - [ ] `rateLimit` counters reset — if you demoed 429 earlier, wait 15 min or restart the server first
 - [ ] Browser tab with the running app open in case they ask "does the client actually work with this?"
