@@ -336,7 +336,7 @@ curl -s "http://localhost:4000/api/user/bookings" -H "Authorization: Bearer $USE
 
 | Time | On screen | Say |
 |---|---|---|
-| 0:00–0:20 | Terminal: server booting with `DEBUG="prisma:query"` | one-line intro of the stack |
+| 0:00–0:20 | Terminal: server booting with `PRISMA_QUERY_LOG=1` | one-line intro of the stack |
 | 0:20–1:20 | `index.js` lines 12–38, then 450–598 | Q1: middleware order + booking trace |
 | 1:20–2:20 | Fire the curl set (201 → 422 → 401 → 409 → 429) | Q2: REST design + error shape |
 | 2:20–3:20 | `auth.js` 1–75; curl 401/403/ownership | Q3: JWT, bcrypt, roles, ownership |
