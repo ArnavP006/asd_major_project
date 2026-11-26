@@ -25,6 +25,18 @@ app.use('/api/user/login', authLimiter);
 app.use('/api/user/register', authLimiter);
 app.use('/api/admin/login', authLimiter);
 
+// Payment endpoints are abuse targets (repeated order/verify calls), so they
+// get their own limiter with a slightly higher allowance than login.
+var paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many payment attempts, try again later', code: 'RATE_LIMITED' },
+});
+app.use('/api/payments/order', paymentLimiter);
+app.use('/api/payments/verify', paymentLimiter);
+
 
 function publicBooking(b) {
   var items = [];
@@ -588,12 +600,16 @@ app.post('/api/bookings', requireUser, async function (req, res) {
 
 // ---------- PAYMENT STUFF ----------
 
-app.post('/api/payments/order', async function (req, res) {
+app.post('/api/payments/order', requireUser, async function (req, res) {
   try {
     var bookingId = req.body.bookingId;
     var booking = await prisma.booking.findUnique({ where: { id: Number(bookingId) } });
     if (!booking) {
       res.status(404).json({ error: 'Booking not found.', code: 'BOOKING_NOT_FOUND' });
+      return;
+    }
+    if (booking.userId !== req.user.id) {
+      res.status(403).json({ error: 'This booking belongs to another visitor.', code: 'FORBIDDEN' });
       return;
     }
     if (booking.status == 'CONFIRMED') {
@@ -613,7 +629,7 @@ app.post('/api/payments/order', async function (req, res) {
   }
 });
 
-app.post('/api/payments/verify', async function (req, res) {
+app.post('/api/payments/verify', requireUser, async function (req, res) {
   try {
     var bookingId = req.body.bookingId;
     var orderId = req.body.orderId;
@@ -626,6 +642,10 @@ app.post('/api/payments/verify', async function (req, res) {
     });
     if (!booking) {
       res.status(404).json({ error: 'Booking not found.', code: 'BOOKING_NOT_FOUND' });
+      return;
+    }
+    if (booking.userId !== req.user.id) {
+      res.status(403).json({ error: 'This booking belongs to another visitor.', code: 'FORBIDDEN' });
       return;
     }
 
